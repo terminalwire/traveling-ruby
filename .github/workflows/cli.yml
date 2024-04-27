@@ -12,7 +12,7 @@ jobs:
       matrix:
         os: [macos-latest]
         shell: [bash, sh]
-        ruby-version: [3.0.7,3.1.5,3.2.4,3.3.0]
+        ruby-version: [3.1.5,3.2.4,3.3.0]
       fail-fast: false
     defaults:
       run:
