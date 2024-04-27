@@ -308,7 +308,7 @@ else
 	OPENSSL_VERSION=3.2.0
 fi
 # OPENSSL_VERSION=3.0.12
-# OPENSSL_VERSION=3.1.4
+# OPENSSL_VERSION=3.1.5
 # https://www.openssl.org/source/
 NCURSES_VERSION=6.4
 # https://ftp.gnu.org/pub/gnu/ncurses/

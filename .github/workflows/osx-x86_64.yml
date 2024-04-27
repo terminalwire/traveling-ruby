@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  PKG_DATE: 20240215
+  PKG_DATE: 20240427
   PLATFORM: osx
   ARCHITECTURES: x86_64
   DEVELOPER_DIR: /Applications/Xcode_14.2.app/Contents/Developer
@@ -17,8 +17,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-12]
-        # ruby-version: [3.0.6] # Pre 3.1.0 builds with openssl 1.1.1
-        ruby-version: [3.0.6, 3.1.4, 3.2.3, 3.3.0]
+        # ruby-version: [3.0.7] # Pre 3.1.0 builds with openssl 1.1.1
+        ruby-version: [3.0.7, 3.1.5, 3.2.4, 3.3.1]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:

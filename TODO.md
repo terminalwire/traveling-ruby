@@ -4,10 +4,10 @@ Just some WIP notes to keep some track of testing progress
 
 ### Latest Ruby Versions
 
-- `3.3.0`
+- `3.3.1`
 - `3.2.3`
-- `3.1.4`
-- `3.0.6`
+- `3.1.5`
+- `3.0.7`
 - `2.6.10`
 
 #### Ruby Build Caveats
@@ -18,7 +18,7 @@ Just some WIP notes to keep some track of testing progress
 
 ### Ruby Versions failing to build
 
-- Linux  `3.0.5` / `3.0.6`
+- Linux  `3.0.5` / `3.0.7`
   - OpenSSL not found error (when using OpenSSL 3.2 or OpenSSL 1.1.1)
  - Linux  `2.7.8`
   - OpenSSL gem fails to build 
