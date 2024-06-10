@@ -308,7 +308,7 @@ LIBTOOL_VERSION=2.4.7
 OPENSSL_VERSION=3.2.0
 # fi
 # OPENSSL_VERSION=3.0.12
-# OPENSSL_VERSION=3.1.5
+# OPENSSL_VERSION=3.1.6
 # https://www.openssl.org/source/
 NCURSES_VERSION=6.4
 # https://ftp.gnu.org/pub/gnu/ncurses/
