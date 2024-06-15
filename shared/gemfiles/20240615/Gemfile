@@ -24,6 +24,7 @@ gem 'thin'
 gem 'unf_ext'
 gem 'unicorn', force_ruby_platform: true
 gem 'nokogiri', force_ruby_platform: true
+gem 'mini_portile2', '2.8.6'
 gem 'mysql2', force_ruby_platform: true
 gem 'bigdecimal', force_ruby_platform: true
 gem 'stringio', force_ruby_platform: true
