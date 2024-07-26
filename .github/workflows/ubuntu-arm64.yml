@@ -8,14 +8,14 @@ on:
   #   branches: [ main ]
 
 env:
-  PKG_DATE: 20240615
+  PKG_DATE: 20240726
 
 jobs:
   make-ubuntu-arm64:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ruby-version: [3.1.6, 3.2.4, 3.3.3]
+        ruby-version: [3.1.6, 3.2.4, 3.3.4]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
