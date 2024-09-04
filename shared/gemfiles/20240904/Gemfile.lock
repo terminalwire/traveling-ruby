@@ -11,31 +11,35 @@ GEM
     eventmachine (1.2.7)
     fast-stemmer (1.0.2)
     ffi (1.17.0)
+    ffi (1.17.0-aarch64-linux-gnu)
+    ffi (1.17.0-arm-linux-gnu)
+    ffi (1.17.0-arm64-darwin)
+    ffi (1.17.0-x86-linux-gnu)
+    ffi (1.17.0-x86_64-darwin)
+    ffi (1.17.0-x86_64-linux-gnu)
     hitimes (3.0.0)
     json (2.7.2)
     kgio (2.11.4)
     mini_portile2 (2.8.6)
     mysql2 (0.5.6)
     nio4r (2.7.3)
-    nokogiri (1.16.6)
+    nokogiri (1.16.7)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    pg (1.5.6)
+    pg (1.5.7)
     psych (5.1.2)
       stringio
     puma (6.4.2)
       nio4r (~> 2.0)
-    racc (1.8.0)
+    racc (1.8.1)
     rack (2.2.9)
     raindrops (0.20.1)
     redcarpet (3.6.0)
-    rexml (3.3.2)
-      strscan
+    rexml (3.3.7)
     rugged (1.7.2)
-    sqlite3 (2.0.2)
+    sqlite3 (2.0.4)
       mini_portile2 (~> 2.8.0)
     stringio (3.1.1)
-    strscan (3.1.0)
     thin (1.8.2)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0, >= 1.0.4)
@@ -86,4 +90,4 @@ DEPENDENCIES
   yajl-ruby
 
 BUNDLED WITH
-   2.5.11
+   2.5.14
