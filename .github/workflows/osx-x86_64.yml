@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [macos-12]
         # ruby-version: [3.0.7] # Pre 3.1.0 builds with openssl 1.1.1
-        ruby-version: [3.1.6, 3.2.5, 3.3.5]
+        ruby-version: [3.1.6, 3.2.6, 3.3.6]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
