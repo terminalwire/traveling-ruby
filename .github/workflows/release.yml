@@ -1,75 +1,59 @@
-name: Release Workflow
+name: Latest Build Artifacts Release Workflow
 
 on:
-  release:
-    types: [created, prereleased, published]
+  workflow_dispatch: # Allows manual triggering
 
 env:
-  REPO: you54f/traveling-ruby
-  PKG_DATE: 20241122
-  NEXT_TAG: ${{ github.event.release.tag_name }}
+  REPO: ${{ github.repository }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RELEASE_TAG: latest-build-artifacts
+  RELEASE_NAME: "Latest Build Artifacts"
 
 jobs:
-  # Job to handle pre-release tasks
-  prerelease:
-    if: github.event.release.prerelease == true
+  fetch-latest-artifacts:
+    name: Fetch Latest Build Artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install GitHub CLI
+      - name: Get Latest Successful Workflow Run
+        id: get-latest-run
         run: |
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && apt update && apt install gh -y
+          latest_run_id=$(gh run list --json databaseId --limit 1 --jq '.[0].databaseId')
+          echo "LATEST_RUN_ID=$latest_run_id" >> $GITHUB_ENV
 
-      - name: Create Draft Release
+      - name: Download Artifacts
         run: |
-          RELEASE_NOTES=$(git log --pretty=format:"%s" $(git describe --tags --abbrev=0)..HEAD)
-          gh release create "${NEXT_TAG}" --prerelease --draft --repo "${REPO}" --title "${NEXT_TAG}" --notes "${RELEASE_NOTES}"
+          gh run download $LATEST_RUN_ID --dir artifacts
+          echo "Downloaded artifacts to ./artifacts/"
 
-  # Job to upload binaries
-  upload-binaries:
-    needs: prerelease
+      - name: List Downloaded Artifacts
+        run: ls -R artifacts
+
+  create-release:
+    name: Create GitHub Release
+    needs: fetch-latest-artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Upload Binaries
+      - name: Create or Update Release
         run: |
-          cd linux
-          for file in $(find traveling-ruby-gems-* -name '*.gz'); do
-            gem_name=$(echo "${file%-*}" | tr '/' '-')
-            gem_version=$(echo "${file%.tar.gz}" | awk -F- '{print $NF}')
-            pkg_date=$(echo "${file%-*}" | cut -d'-' -f4)
-            ruby_version=$(echo "${file%-*}" | tr '/' '-' | sed -E 's/.*-([0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?)-([a-z]+)-([a-z0-9_]+)\.tar\.gz/\1/')
-            echo $ruby_version-$gem_version.tar.gz
-            cp "$file" $ruby_version-$gem_version.tar.gz
+          # Create or update the release
+          if gh release view "${RELEASE_TAG}" --repo "${REPO}"; then
+            echo "Updating release ${RELEASE_TAG}"
+            gh release delete "${RELEASE_TAG}" --repo "${REPO}" --yes
+          fi
+          gh release create "${RELEASE_TAG}" --repo "${REPO}" --title "${RELEASE_NAME}" --notes "Artifacts from the latest successful build." --draft
+
+      - name: Upload Artifacts to Release
+        run: |
+          for file in $(find artifacts -type f); do
+            gh release upload "${RELEASE_TAG}" "$file" --repo "${REPO}" --clobber
           done
-          gh release upload "${NEXT_TAG}" traveling-ruby-*.tar.gz --repo "${REPO}" --clobber
 
-  # Job to test the release
-  test-release:
-    needs: upload-binaries
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Install Dependencies
-        run: sudo apt update && sudo apt install -y ruby
-
-      - name: Download Release Binaries
+      - name: Confirm Uploaded Artifacts
         run: |
-          gh release download "${NEXT_TAG}" --repo "${REPO}" -p "traveling-ruby-${PKG_DATE}*"
-          tar -xzf traveling-ruby-${PKG_DATE}*
-
-      - name: Run Tests
-        run: |
-          echo "Testing release binaries..."
-          # Add your test commands here
-          ruby --version
+          gh release view "${RELEASE_TAG}" --repo "${REPO}" --json assets -q '.assets[].name'
