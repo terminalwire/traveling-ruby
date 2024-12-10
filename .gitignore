@@ -11,6 +11,7 @@
 /osx/work
 /windows/cache
 /windows/output
+/artifacts
 *.sublime-workspace
 *.tar.gz
 .DS_Store

@@ -6,62 +6,46 @@ gemfile do
 end
 
 require 'octokit'
+require 'fileutils'
 
-# Configuration
+REPO = "terminalwire/traveling-ruby"
 GITHUB_TOKEN = ENV.fetch('GITHUB_TOKEN')
-REPO = 'terminalwire/traveling-ruby' # Replace with your repo
+COMMIT =  `git rev-parse HEAD`.strip
+WORKFLOWS = %w[
+  alpine-x86_64.yml
+  alpine-arm64.yml
+  osx-x86_64.yml
+  osx-arm64.yml
+  ubuntu-x86_64.yml
+  ubuntu-arm64.yml
+]
 
-# Initialize Octokit client
-client = Octokit::Client.new(access_token: GITHUB_TOKEN)
+github = Octokit::Client.new(access_token: ENV.fetch('GITHUB_TOKEN'))
 
-# List all workflows and artifacts
-def list_artifacts_for_workflows(client, repo)
-  workflows = client.workflows(repo)[:workflows]
+WORKFLOWS.each do |workflow|
+  puts "Processing #{workflow}"
+  architecture = File.basename(workflow, ".yml")
+  # Get the latest run.
+  # TODO: We might need to sort by date and status.
+  run = github.workflow_runs(REPO, workflow, head_sha: COMMIT).workflow_runs.first
 
-  workflows.each do |workflow|
-    puts "Workflow Name: #{workflow[:name]}"
-    puts "Path: #{workflow[:path]}"
-    puts "State: #{workflow[:state]}"
-    puts "-" * 40
+  if run
+    # Iterate through each each artifact.
+    path = Pathname.new("artifacts/#{architecture}")
+    FileUtils.mkdir_p path
 
-    # Get the latest workflow runs for this workflow
-    runs = client.workflow_runs(repo, workflow[:id], status: 'success', per_page: 1)
-    if runs[:workflow_runs].empty?
-      puts "No successful runs found for this workflow."
-      next
-    end
+    github.workflow_run_artifacts(REPO, run.id).artifacts.each do |artifact|
+      download_path = path.join(artifact.name)
+      puts "Downloading #{artifact.archive_download_url} (#{artifact.size_in_bytes} bytes) to #{download_path}"
 
-    # Get the latest run ID
-    latest_run = runs[:workflow_runs].first
-    puts "Latest Run ID: #{latest_run[:id]}"
-    puts "Latest Run URL: #{latest_run[:html_url]}"
-
-    # Get artifacts for the latest run
-    artifacts = client.workflow_run_artifacts(repo, latest_run[:id])[:artifacts]
-    if artifacts.empty?
-      puts "No artifacts found for this run."
-    else
-      puts "Artifacts:"
-      artifacts.each do |artifact|
-        puts "  - Name: #{artifact[:name]}"
-        puts "    Size: #{artifact[:size_in_bytes]} bytes"
-        puts "    URL: #{artifact[:archive_download_url]}"
-
-        # response = client.get(artifact[:archive_download_url])
-        # File.write(artifact.name, response)
-        puts "Saved to #{artifact.name}"
+      # Download the artifact using Octokit
+      File.open(download_path, 'wb') do |file|
+        file.write(github.get(artifact.archive_download_url))
       end
-    end
-    puts "-" * 40
-  end
-end
 
-# Main logic
-begin
-  puts "Listing all workflows and artifacts for repository: #{REPO}"
-  list_artifacts_for_workflows(client, REPO)
-rescue StandardError => e
-  puts "Error: #{e.message}"
-  puts e.backtrace if ENV['DEBUG']
-  exit 1
+      puts "Downloaded #{artifact.name} to #{download_path}"
+    end
+  else
+    puts "No runs found for #{workflow}"
+  end
 end
