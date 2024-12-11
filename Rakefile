@@ -21,10 +21,10 @@ WORKFLOWS = %w[
   ubuntu-x86_64.yml
   ubuntu-arm64.yml
 ]
-CONCURRENCY = ENV.fetch('CONCURRENCY', 12)
+CONCURRENCY = ENV.fetch('CONCURRENCY', 6)
 
-def release_tag(date = Date.today)
-  "rel-#{date.strftime('%Y%m%d')}"
+def release_tag(time = Time.now)
+  time.utc.strftime('%Y-%m-%d_%H:%M')
 end
 
 def concurrently(items, &)
