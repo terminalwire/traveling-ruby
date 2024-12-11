@@ -73,7 +73,12 @@ end
 desc "Create a release with ./artifacts"
 task :release do
   # Now create a Github release and we'll put the artfacts into itd
-  release = github.create_release(REPO, release_tag, name: "Release #{release_tag}", body: "Ruby and gem builds for commit #{COMMIT}", draft: true)
+  release = github.create_release(REPO, release_tag,
+    draft: true,
+    prerelease: true,
+    name: "Building: Release #{release_tag}",
+    body: "Building: Ruby and gem builds for commit #{COMMIT}."
+  )
 
   # Upload artifacts to the release.
   concurrently Dir.glob("artifacts/release/traveling-ruby-*.tar.gz") do |tarball|
@@ -86,7 +91,13 @@ task :release do
   end
 
   # Now finalize the release.
-  release.update_release(draft: false)
+  github.update_release(
+    release.url,
+    draft: false,  # Make it public
+    prerelease: false, # Ensure it's not marked as a pre-release
+    name: "Release #{release_tag}",
+    body: "Ruby and gem builds for commit #{COMMIT}."
+  )
 end
 
 task default: %i[clean download unpack release]
