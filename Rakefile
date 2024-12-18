@@ -12,7 +12,10 @@ require 'octokit'
 
 REPO = "terminalwire/traveling-ruby"
 GITHUB_TOKEN = ENV.fetch('GITHUB_TOKEN')
-COMMIT =  ENV.fetch("COMMIT", `git rev-parse HEAD`.strip)
+COMMIT = ENV.fetch("COMMIT", `git ls-remote origin HEAD`.split.first.strip)
+CONCURRENCY = ENV.fetch('CONCURRENCY', 6)
+RELEASE_TAG = ENV.fetch("RELEASE_TAG", Time.now.utc.strftime('%Y-%m-%d_%H-%M'))
+GITHUB_TOKEN = ENV.fetch('GITHUB_TOKEN')
 WORKFLOWS = %w[
   alpine-x86_64.yml
   alpine-arm64.yml
@@ -21,21 +24,18 @@ WORKFLOWS = %w[
   ubuntu-x86_64.yml
   ubuntu-arm64.yml
 ]
-CONCURRENCY = ENV.fetch('CONCURRENCY', 6)
-
-def release_tag(time = Time.now)
-  time.utc.strftime('%Y-%m-%d_%H:%M')
-end
 
 def concurrently(items, &)
   Parallel.each(items, in_threads: CONCURRENCY, &)
 end
 
-github = Octokit::Client.new(access_token: ENV.fetch('GITHUB_TOKEN'))
+github = Octokit::Client.new(access_token: GITHUB_TOKEN)
 
 desc "Download build artifacts"
 task :download do
-  sh "mkdir -p artifacts/workflow"
+  sh "mkdir -p artifacts/workflows"
+
+  puts "Downloading artifacts for commit #{COMMIT}"
 
   WORKFLOWS.each do |workflow|
     puts "Processing #{workflow}"
@@ -46,7 +46,7 @@ task :download do
     if run
       # Iterate through each each artifact.
       concurrently github.workflow_run_artifacts(REPO, run.id).artifacts do |artifact|
-        download_path = File.join("artifacts/workflow", artifact.name)
+        download_path = File.join("artifacts/workflows", artifact.name)
         puts "Downloading #{artifact.archive_download_url} (#{artifact.size_in_bytes} bytes) to #{download_path}"
         File.write download_path, github.get(artifact.archive_download_url)
         puts "Downloaded #{artifact.name} to #{download_path}"
@@ -54,14 +54,6 @@ task :download do
     else
       puts "No runs found for #{workflow}"
     end
-  end
-end
-
-desc "Unpack build artifacts"
-task :unpack do
-  sh "mkdir -p artifacts/release"
-  Dir.glob("artifacts/workflow/traveling-ruby-*.tar.gz").each do |tarball|
-    sh "tar -xzf #{tarball} -C ./artifacts/release"
   end
 end
 
@@ -73,15 +65,16 @@ end
 desc "Create a release with ./artifacts"
 task :release do
   # Now create a Github release and we'll put the artfacts into itd
-  release = github.create_release(REPO, release_tag,
+  release = github.create_release(REPO, RELEASE_TAG,
     draft: true,
-    prerelease: true,
-    name: "Building: Release #{release_tag}",
+    name: "Building: Release #{RELEASE_TAG}",
     body: "Building: Ruby and gem builds for commit #{COMMIT}."
   )
 
+  puts "New release created: #{release.url}"
+
   # Upload artifacts to the release.
-  concurrently Dir.glob("artifacts/release/traveling-ruby-*.tar.gz") do |tarball|
+  concurrently Dir.glob("artifacts/workflows/traveling-ruby-*.tar.gz") do |tarball|
     puts "Uploading #{tarball} to #{release.url}"
     github.upload_asset(
       release.url,
@@ -94,10 +87,10 @@ task :release do
   github.update_release(
     release.url,
     draft: false,  # Make it public
-    prerelease: false, # Ensure it's not marked as a pre-release
-    name: "Release #{release_tag}",
+    name: "Release #{RELEASE_TAG}",
     body: "Ruby and gem builds for commit #{COMMIT}."
   )
+  puts "Release finalized: #{release.url}"
 end
 
-task default: %i[clean download unpack release]
+task default: %i[clean download release]
